@@ -1,0 +1,86 @@
+version: '3.8'
+
+networks:
+  mongo_network:
+    driver: bridge
+
+volumes:
+  mongo1_data:
+  mongo2_data:
+  mongo3_data:
+
+services:
+  mongo1:
+    container_name: mongo_rs0
+    image: mongo:7.0-jammy
+    hostname: mongo1
+    command: ["--replSet", "rs0", "--bind_ip", "127.0.0.1,mongo1", "--port", "27017", "--keyFile", "/etc/mongodb/pki/keyfile"]
+    volumes:
+      - mongo1_data:/data/db
+      - ./mongo-keyfile:/etc/mongodb/pki/keyfile
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
+    ports:
+      - 27017:27017
+    networks:
+      - mongo_network
+    healthcheck:
+      test: echo "try {rs.status()} catch(err) {rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo1:27017',priority:1},{_id:1,host:'mongo2:27018',priority:0.5},{_id:2,host:'mongo3:27019',priority:0.5}]})}" | mongosh --port 27017 -u '${MONGO_ADMIN_USER:-admin}' -p '${MONGO_ADMIN_PASSWD:-password}' --authenticationDatabase admin --quiet
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: '${MONGO_ADMIN_USER:-admin}'
+      MONGO_INITDB_ROOT_PASSWORD: '${MONGO_ADMIN_PASSWD:-password}'
+      MONGO_INITDB_DATABASE: '${DB_NAME:-testdb}'
+      DB_USERNAME: ${DB_USERNAME:-admin}
+      DB_PASSWORD: ${DB_PASSWORD:-password}
+  
+  mongo2:
+    container_name: mongo_rs1
+    image: mongo:7.0-jammy
+    hostname: mongo2
+    command: ["--replSet", "rs0", "--bind_ip", "127.0.0.1,mongo2", "--port", "27018", "--keyFile", "/etc/mongodb/pki/keyfile"]
+    volumes:
+      - mongo2_data:/data/db
+      - ./mongo-keyfile:/etc/mongodb/pki/keyfile
+    ports:
+      - 27018:27018
+    networks:
+      - mongo_network
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: '${MONGO_ADMIN_USER:-admin}'
+      MONGO_INITDB_ROOT_PASSWORD: '${MONGO_ADMIN_PASSWD:-password}'
+  
+  mongo3:
+    container_name: mongo_rs2
+    image: mongo:7.0-jammy
+    hostname: mongo3
+    command: ["--replSet", "rs0", "--bind_ip", "127.0.0.1,mongo3", "--port", "27019", "--keyFile", "/etc/mongodb/pki/keyfile"]
+    volumes:
+      - mongo3_data:/data/db
+      - ./mongo-keyfile:/etc/mongodb/pki/keyfile
+    ports:
+      - 27019:27019
+    networks:
+      - mongo_network
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: '${MONGO_ADMIN_USER:-admin}'
+      MONGO_INITDB_ROOT_PASSWORD: '${MONGO_ADMIN_PASSWD:-password}'
+  
+  mongo-express:
+    container_name: mongo-express
+    image: mongo-express
+    ports:
+      - 8081:8081
+    networks:
+      - mongo_network
+    environment:
+      ME_CONFIG_BASICAUTH: "false"
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: 'false'
+      ME_CONFIG_MONGODB_ADMINUSERNAME: '${MONGO_ADMIN_USER:-admin}'
+      ME_CONFIG_MONGODB_ADMINPASSWORD: '${MONGO_ADMIN_PASSWD:-password}'
+      ME_CONFIG_MONGODB_URL: mongodb://${DB_USERNAME:-admin}:${DB_PASSWORD:-password}@mongo1:27017,mongo2:27018,mongo3:27019/${DB_NAME:-testdb}?replicaSet=rs0
+    depends_on:
+      mongo1:
+        condition: service_healthy

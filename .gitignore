@@ -1,0 +1,13 @@
+atelier-mongodb/mongo/replicaset/mongo-keyfile
+venv
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+*.db
+*.sqlite
+*.sqlite3
+*.log
+*.pid
+*.pid.lock
+*.tgz

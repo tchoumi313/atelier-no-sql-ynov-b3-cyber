@@ -14,7 +14,7 @@ from pymongo import MongoClient, ReadPreference
 
 def test_replicaset_connection():
     # Connection URI with authentication and replica set configuration
-    uri = "mongodb://admin:password@localhost:27017,localhost:27018,localhost:27019/testdb?replicaSet=rs0"
+    uri = "mongodb://admin:pass@localhost:27017/admin?replicaSet=rs0"
     
     print("Connecting to MongoDB replica set...")
     client = MongoClient(uri)

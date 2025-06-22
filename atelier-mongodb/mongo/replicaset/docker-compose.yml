@@ -24,17 +24,15 @@ services:
     networks:
       - mongo_network
     healthcheck:
-      test: echo "try {rs.status()} catch(err) {rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo1:27017',priority:1},{_id:1,host:'mongo2:27018',priority:0.5},{_id:2,host:'mongo3:27019',priority:0.5}]})}" | mongosh --port 27017 -u '${MONGO_ADMIN_USER:-admin}' -p '${MONGO_ADMIN_PASSWD:-password}' --authenticationDatabase admin --quiet
+      test: echo "try {rs.status()} catch(err) {rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo1:27017',priority:1},{_id:1,host:'mongo2:27018',priority:0.5},{_id:2,host:'mongo3:27019',priority:0.5}]})}" | mongosh --port 27017 -u admin -p password --authenticationDatabase admin --quiet
       interval: 5m
       timeout: 10s
       retries: 3
       start_period: 10s
     environment:
-      MONGO_INITDB_ROOT_USERNAME: '${MONGO_ADMIN_USER:-admin}'
-      MONGO_INITDB_ROOT_PASSWORD: '${MONGO_ADMIN_PASSWD:-password}'
-      MONGO_INITDB_DATABASE: '${DB_NAME:-testdb}'
-      DB_USERNAME: ${DB_USERNAME:-admin}
-      DB_PASSWORD: ${DB_PASSWORD:-password}
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: testdb
   
   mongo2:
     container_name: mongo_rs1
@@ -49,8 +47,8 @@ services:
     networks:
       - mongo_network
     environment:
-      MONGO_INITDB_ROOT_USERNAME: '${MONGO_ADMIN_USER:-admin}'
-      MONGO_INITDB_ROOT_PASSWORD: '${MONGO_ADMIN_PASSWD:-password}'
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
   
   mongo3:
     container_name: mongo_rs2
@@ -65,8 +63,8 @@ services:
     networks:
       - mongo_network
     environment:
-      MONGO_INITDB_ROOT_USERNAME: '${MONGO_ADMIN_USER:-admin}'
-      MONGO_INITDB_ROOT_PASSWORD: '${MONGO_ADMIN_PASSWD:-password}'
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
   
   mongo-express:
     container_name: mongo-express
@@ -76,11 +74,9 @@ services:
     networks:
       - mongo_network
     environment:
-      ME_CONFIG_BASICAUTH: "false"
-      ME_CONFIG_MONGODB_ENABLE_ADMIN: 'false'
-      ME_CONFIG_MONGODB_ADMINUSERNAME: '${MONGO_ADMIN_USER:-admin}'
-      ME_CONFIG_MONGODB_ADMINPASSWORD: '${MONGO_ADMIN_PASSWD:-password}'
-      ME_CONFIG_MONGODB_URL: mongodb://${DB_USERNAME:-admin}:${DB_PASSWORD:-password}@mongo1:27017,mongo2:27018,mongo3:27019/${DB_NAME:-testdb}?replicaSet=rs0
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_MONGODB_URL: mongodb://admin:password@mongo1:27017,mongo2:27018,mongo3:27019/admin?replicaSet=rs0
     depends_on:
       mongo1:
         condition: service_healthy

@@ -31,23 +31,9 @@ docker-compose up -d
 ```bash
 docker ps
 ```
-
 Vous devriez voir 4 containers: `mongo1`, `mongo2`, `mongo3` et `mongo-init`.
 
-4. Vérifiez que le replica set a été initialisé correctement en vous connectant à mongo1 et en exécutant `rs.status()`:
-
-```bash
-docker exec -it mongo1 mongosh -u admin -p password --authenticationDatabase admin
-```
-
-Puis dans le shell MongoDB:
-
-```javascript
-rs.status()
-```
-
-Vous devriez voir un nœud avec `"stateStr" : "PRIMARY"` et deux nœuds avec `"stateStr" : "SECONDARY"`.
-
+![](./image.png)
 ## Connexion au Replica Set
 
 ### Via MongoDB Shell (mongosh)

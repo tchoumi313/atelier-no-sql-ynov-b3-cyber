@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neo4j E-commerce - Exploration de données graphe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 25px;
+            border: 2px solid #f1f2f6;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #48cae4;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #0096c7;
+        }
+
+        .results-container {
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+
+        .card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .table tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .suggestion-item {
+            background: #e8f4f8;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #48cae4;
+        }
+
+        .suggestion-method {
+            font-size: 0.9em;
+            color: #666;
+            font-style: italic;
+        }
+
+        .price {
+            font-weight: bold;
+            color: #27ae60;
+        }
+
+        .error {
+            color: #e74c3c;
+            background: #fadbd8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .success {
+            color: #27ae60;
+            background: #d5f4e6;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Neo4j E-commerce</h1>
+            <p>Exploration de données graphe - Relations clients, commandes et produits</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Section de test de connexion -->
+            <div class="section">
+                <h2>Test de connexion Neo4j</h2>
+                <button onclick="testConnection()" class="btn btn-primary">Tester la connexion</button>
+                <div id="connectionResult"></div>
+            </div>
+
+            <!-- Section des statistiques générales -->
+            <div class="section">
+                <h2>Statistiques générales</h2>
+                <button onclick="loadStats()" class="btn btn-secondary">Charger les statistiques</button>
+                <div id="statsResult"></div>
+            </div>
+
+            <!-- Section de recherche par client -->
+            <div class="section">
+                <h2>Produits achetés par un client</h2>
+                <div class="form-group">
+                    <label for="clientSelect">Sélectionner un client :</label>
+                    <select id="clientSelect" class="form-control">
+                        <option value="">-- Chargez d'abord les clients --</option>
+                    </select>
+                </div>
+                <button onclick="loadClients()" class="btn btn-secondary">Charger les clients</button>
+                <button onclick="getClientProduits()" class="btn btn-primary">Voir les produits</button>
+                <div id="clientProduitsResult"></div>
+            </div>
+
+            <!-- Section de recherche par produit -->
+            <div class="section">
+                <h2>Clients ayant acheté un produit</h2>
+                <div class="form-group">
+                    <label for="produitSelect">Sélectionner un produit :</label>
+                    <select id="produitSelect" class="form-control">
+                        <option value="">-- Chargez d'abord les produits --</option>
+                    </select>
+                </div>
+                <button onclick="loadProduits()" class="btn btn-secondary">Charger les produits</button>
+                <button onclick="getProduitClients()" class="btn btn-primary">Voir les clients</button>
+                <div id="produitClientsResult"></div>
+            </div>
+
+            <!-- Section des suggestions -->
+            <div class="section">
+                <h2>Suggestions de produits</h2>
+                <div class="form-group">
+                    <label for="suggestionClientSelect">Client pour les suggestions :</label>
+                    <select id="suggestionClientSelect" class="form-control">
+                        <option value="">-- Sélectionner un client --</option>
+                    </select>
+                </div>
+                <button onclick="getSuggestions()" class="btn btn-primary">Obtenir des suggestions</button>
+                <div id="suggestionsResult"></div>
+            </div>
+
+            <!-- Section des analyses -->
+            <div class="section">
+                <h2>Analyses business</h2>
+                <div class="grid">
+                    <div class="card">
+                        <h3>Top produits</h3>
+                        <button onclick="getTopProduits()" class="btn btn-secondary">Analyser</button>
+                        <div id="topProduitsResult"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Clients actifs</h3>
+                        <button onclick="getClientsActifs()" class="btn btn-secondary">Analyser</button>
+                        <div id="clientsActifsResult"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Revenus par catégorie</h3>
+                        <button onclick="getAnalyticsCategories()" class="btn btn-secondary">Analyser</button>
+                        <div id="categoriesResult"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let clients = [];
+        let produits = [];
+
+        // Test de connexion
+        async function testConnection() {
+            const resultDiv = document.getElementById('connectionResult');
+            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Test en cours...</div>';
+
+            try {
+                const response = await fetch('/api/test-connection');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    resultDiv.innerHTML = `<div class="success">${data.message}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">Erreur: ${data.message}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Erreur de connexion: ${error.message}</div>`;
+            }
+        }
+
+        // Charger les statistiques
+        async function loadStats() {
+            const resultDiv = document.getElementById('statsResult');
+            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Chargement...</div>';
+
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-number">${stats.nb_clients || 0}</div>
+                            <div class="stat-label">Clients</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">${stats.nb_produits || 0}</div>
+                            <div class="stat-label">Produits</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">${stats.nb_commandes || 0}</div>
+                            <div class="stat-label">Commandes</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">${stats.nb_achats || 0}</div>
+                            <div class="stat-label">Achats</div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Erreur: ${error.message}</div>`;
+            }
+        }
+
+        // Charger les clients
+        async function loadClients() {
+            try {
+                const response = await fetch('/api/clients');
+                clients = await response.json();
+                
+                const clientSelect = document.getElementById('clientSelect');
+                const suggestionClientSelect = document.getElementById('suggestionClientSelect');
+                
+                clientSelect.innerHTML = '<option value="">-- Sélectionner un client --</option>';
+                suggestionClientSelect.innerHTML = '<option value="">-- Sélectionner un client --</option>';
+                
+                clients.forEach(client => {
+                    const option = `<option value="${client.id}">${client.nom} (${client.ville})</option>`;
+                    clientSelect.innerHTML += option;
+                    suggestionClientSelect.innerHTML += option;
+                });
+            } catch (error) {
+                console.error('Erreur lors du chargement des clients:', error);
+            }
+        }
+
+        // Charger les produits
+        async function loadProduits() {
+            try {
+                const response = await fetch('/api/produits');
+                produits = await response.json();
+                
+                const produitSelect = document.getElementById('produitSelect');
+                produitSelect.innerHTML = '<option value="">-- Sélectionner un produit --</option>';
+                
+                produits.forEach(produit => {
+                    const option = `<option value="${produit.id}">${produit.nom} (${produit.categorie}) - ${produit.prix}€</option>`;
+                    produitSelect.innerHTML += option;
+                });
+            } catch (error) {
+                console.error('Erreur lors du chargement des produits:', error);
+            }
+        }
+
+        // Obtenir les produits d'un client
+        async function getClientProduits() {
+            const clientId = document.getElementById('clientSelect').value;
+            const resultDiv = document.getElementById('clientProduitsResult');
+            
+            if (!clientId) {
+                resultDiv.innerHTML = '<div class="error">Veuillez sélectionner un client</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Chargement...</div>';
+
+            try {
+                const response = await fetch(`/api/client/${clientId}/produits`);
+                const produits = await response.json();
+                
+                if (produits.length === 0) {
+                    resultDiv.innerHTML = '<div class="error">Aucun produit trouvé pour ce client</div>';
+                    return;
+                }
+
+                let html = `
+                    <div class="results-container">
+                        <h3>Produits achetés par ${produits[0].nom}</h3>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Produit</th>
+                                    <th>Catégorie</th>
+                                    <th>Quantité</th>
+                                    <th>Prix unitaire</th>
+                                    <th>Date commande</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                produits.forEach(produit => {
+                    html += `
+                        <tr>
+                            <td>${produit.nom}</td>
+                            <td>${produit.categorie}</td>
+                            <td>${produit.quantite}</td>
+                            <td class="price">${produit.prix_unitaire}€</td>
+                            <td>${produit.date_commande}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table></div>';
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Erreur: ${error.message}</div>`;
+            }
+        }
+
+        // Obtenir les clients d'un produit
+        async function getProduitClients() {
+            const produitId = document.getElementById('produitSelect').value;
+            const resultDiv = document.getElementById('produitClientsResult');
+            
+            if (!produitId) {
+                resultDiv.innerHTML = '<div class="error">Veuillez sélectionner un produit</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Chargement...</div>';
+
+            try {
+                const response = await fetch(`/api/produit/${produitId}/clients`);
+                const clients = await response.json();
+                
+                if (clients.length === 0) {
+                    resultDiv.innerHTML = '<div class="error">Aucun client trouvé pour ce produit</div>';
+                    return;
+                }
+
+                let html = `
+                    <div class="results-container">
+                        <h3>Clients ayant acheté "${clients[0].nom}"</h3>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Email</th>
+                                    <th>Ville</th>
+                                    <th>Quantité</th>
+                                    <th>Date achat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                clients.forEach(client => {
+                    html += `
+                        <tr>
+                            <td>${client.nom}</td>
+                            <td>${client.email}</td>
+                            <td>${client.ville}</td>
+                            <td>${client.quantite_achetee}</td>
+                            <td>${client.date_achat}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table></div>';
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Erreur: ${error.message}</div>`;
+            }
+        }
+
+        // Obtenir des suggestions
+        async function getSuggestions() {
+            const clientId = document.getElementById('suggestionClientSelect').value;
+            const resultDiv = document.getElementById('suggestionsResult');
+            
+            if (!clientId) {
+                resultDiv.innerHTML = '<div class="error">Veuillez sélectionner un client</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Chargement...</div>';
+
+            try {
+                const response = await fetch(`/api/suggestions/${clientId}`);
+                const suggestions = await response.json();
+                
+                let html = '<div class="results-container"><h3>Suggestions de produits</h3>';
+                
+                if (suggestions.collaborative && suggestions.collaborative.length > 0) {
+                    html += '<h4>Basées sur les achats similaires :</h4>';
+                    suggestions.collaborative.forEach(produit => {
+                        html += `
+                            <div class="suggestion-item">
+                                <strong>${produit.nom}</strong> - <span class="price">${produit.prix}€</span><br>
+                                Catégorie: ${produit.categorie}<br>
+                                <span class="suggestion-method">Recommandé par ${produit.nb_clients_similaires} clients similaires</span>
+                            </div>
+                        `;
+                    });
+                }
+                
+                if (suggestions.similaires && suggestions.similaires.length > 0) {
+                    html += '<h4>Produits similaires à vos achats :</h4>';
+                    suggestions.similaires.forEach(produit => {
+                        html += `
+                            <div class="suggestion-item">
+                                <strong>${produit.nom}</strong> - <span class="price">${produit.prix}€</span><br>
+                                Catégorie: ${produit.categorie}<br>
+                                <span class="suggestion-method">Score de similarité: ${produit.score_similarite}</span>
+                            </div>
+                        `;
+                    });
+                }
+                
+                if ((!suggestions.collaborative || suggestions.collaborative.length === 0) && 
+                    (!suggestions.similaires || suggestions.similaires.length === 0)) {
+                    html += '<div class="error">Aucune suggestion disponible pour ce client</div>';
+                }
+                
+                html += '</div>';
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Erreur: ${error.message}</div>`;
+            }
+        }
+
+        // Analyses business
+        async function getTopProduits() {
+            const resultDiv = document.getElementById('topProduitsResult');
+            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Analyse...</div>';
+
+            try {
+                const response = await fetch('/api/analytics/top-produits');
+                const produits = await response.json();
+                
+                let html = '<table class="table"><thead><tr><th>Produit</th><th>Vendus</th><th>CA</th></tr></thead><tbody>';
+                produits.slice(0, 5).forEach(produit => {
+                    html += `
+                        <tr>
+                            <td>${produit.nom}</td>
+                            <td>${produit.total_vendu}</td>
+                            <td class="price">${produit.chiffre_affaires.toFixed(2)}€</td>
+                        </tr>
+                    `;
+                });
+                html += '</tbody></table>';
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Erreur: ${error.message}</div>`;
+            }
+        }
+
+        async function getClientsActifs() {
+            const resultDiv = document.getElementById('clientsActifsResult');
+            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Analyse...</div>';
+
+            try {
+                const response = await fetch('/api/analytics/clients-actifs');
+                const clients = await response.json();
+                
+                let html = '<table class="table"><thead><tr><th>Client</th><th>Commandes</th><th>Total</th></tr></thead><tbody>';
+                clients.slice(0, 5).forEach(client => {
+                    html += `
+                        <tr>
+                            <td>${client.nom}</td>
+                            <td>${client.nb_commandes}</td>
+                            <td class="price">${client.total_depense.toFixed(2)}€</td>
+                        </tr>
+                    `;
+                });
+                html += '</tbody></table>';
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Erreur: ${error.message}</div>`;
+            }
+        }
+
+        async function getAnalyticsCategories() {
+            const resultDiv = document.getElementById('categoriesResult');
+            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Analyse...</div>';
+
+            try {
+                const response = await fetch('/api/analytics/categories');
+                const categories = await response.json();
+                
+                let html = '<table class="table"><thead><tr><th>Catégorie</th><th>Produits</th><th>CA</th></tr></thead><tbody>';
+                categories.forEach(cat => {
+                    html += `
+                        <tr>
+                            <td>${cat.categorie}</td>
+                            <td>${cat.nb_produits_differents}</td>
+                            <td class="price">${cat.chiffre_affaires.toFixed(2)}€</td>
+                        </tr>
+                    `;
+                });
+                html += '</tbody></table>';
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Erreur: ${error.message}</div>`;
+            }
+        }
+
+        // Initialisation
+        window.onload = function() {
+            testConnection();
+            loadStats();
+        };
+    </script>
+</body>
+</html>

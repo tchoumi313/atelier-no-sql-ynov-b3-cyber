@@ -1,7 +1,7 @@
 # Rapport - Base de données graphe Neo4j E-commerce
 
-**Étudiant :** TCHOUMI Donald  
-**Date :** 22 juin 2025  
+**Étudiant :** Beaudouin Donald TCHOUMI NZIKEU, Chilene EMANE, Quentin GROPPI, Billy LO   
+**Date :** 8 juillet 2025  
 **Contexte :** Mise en place d'une base de données graphe avec Neo4j et intégration dans une application simple  
 
 ## 1. Introduction
